@@ -9,6 +9,7 @@ import model.network as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device
+from math import ceil
 
 
 torch.backends.cudnn.benchmark = True
@@ -40,21 +41,34 @@ def main(config):
     logger.info(model)
 
     # get function handles of loss and metrics
-    criterion = getattr(module_loss, config['loss'])
+    criterion = config.init_obj('loss', module_loss)
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
-    #lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
-    lr_scheduler = None
+
+    n_encode_channels = config['arch']['args']['n_encode_channels']
+    k1 = config['lr_scheduler']['k1']
+    num_warmups = config['lr_scheduler']['num_warmups']
+    k2 = config['lr_scheduler']['k2']
+    lr_end_of_warmup = k1 * (n_encode_channels ** -0.5) * (num_warmups**-1.5) * num_warmups
+    optimizer = config.init_obj('optimizer', torch.optim, trainable_params, lr=lr_end_of_warmup)
+    len_epoch = len(tr_data_loader)
+    # after num_warmups, the lr is set back to init_lr
+    lambda_warmup = lambda step: step/num_warmups
+    warmup_scheduler =torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_warmup)
+    lambda_epoch = lambda epoch: k2/lr_end_of_warmup * (0.98 ** ((epoch+ceil(num_warmups/len_epoch))//2))
+    epoch_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_epoch)
 
     trainer = Trainer(model, criterion, metrics, optimizer,
                       config=config,
                       device=device,
                       data_loader=tr_data_loader,
                       valid_data_loader=val_data_loader,
-                      lr_scheduler=lr_scheduler)
+                      num_warmups = num_warmups,
+                      warmup_scheduler=warmup_scheduler,
+                      epoch_scheduler=epoch_scheduler
+                      )
 
     trainer.train()
 
