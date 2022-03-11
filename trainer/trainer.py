@@ -78,7 +78,7 @@ class Trainer(BaseTrainer):
 
             if step <= self.num_warmups:
                 self.warmup_scheduler.step()
-                self.logger.debug(self.warmup_scheduler.get_last_lr())
+                #self.logger.debug(self.warmup_scheduler.get_last_lr())
 
 
             if batch_idx>0 and batch_idx % self.log_step == 0:
