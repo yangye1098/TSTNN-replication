@@ -17,6 +17,7 @@ class TFLoss(object):
         self.mse_loss = nn.MSELoss(reduction='mean')
 
     def __call__(self, output, target):
+        self.spectrogram.to(output.device)
         spec_ri_mag_output = torch.abs(torch.view_as_real(self.spectrogram(output)))
         spec_ri_mag_target = torch.abs(torch.view_as_real(self.spectrogram(target)))
         loss_F = self.l1_loss(torch.sum(spec_ri_mag_output, dim=-1, keepdim=False), torch.sum(spec_ri_mag_target, dim=-1, keepdim=False))
