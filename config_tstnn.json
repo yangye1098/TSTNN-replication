@@ -1,0 +1,65 @@
+{
+    "name": "TSTNN",
+    "n_gpu": 0,
+    "sample_rate": 16000,
+    "num_samples": 65792,
+    "arch": {
+        "type": "TSTNN",
+        "args": {
+            "segment_window": 512,
+            "segment_stride": 256,
+            "n_encode_channels": 64
+        }
+    },
+
+    "tr_dataset": {
+        "type": "AudioDataset",
+        "args":{
+            "data_root": "data/Voicebank-DEMAND/train_28spk",
+            "datatype": ".wav"
+        }
+    },
+    "val_dataset": {
+        "type": "AudioDataset",
+        "args":{
+            "data_root": "data/Voicebank-DEMAND/test",
+            "datatype": ".wav"
+        }
+    },
+    "data_loader": {
+        "type": "AudioDataLoader",
+        "args":{
+            "batch_size": 1,
+            "shuffle": true,
+            "validation_split": 0.0,
+            "num_workers": 2
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.002,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": "l1_loss",
+    "metrics": [
+        "sisnr"
+    ],
+    "trainer": {
+        "epochs": 100,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "valid_period": 1,
+        "verbosity": 2,
+        "n_valid_data_batch": 1,
+        "log_step": 10,
+        
+        "monitor": "min val_loss",
+        "early_stop": -1,
+
+        "tensorboard": true
+    }
+}
