@@ -24,16 +24,14 @@ def main(config):
 
     sample_rate = config['sample_rate']
 
-    infer_dataset = config.init_obj('infer_dataset', module_data, sample_rate=sample_rate, T=config['num_samples'] )
-    infer_data_loader = config.init_obj('infer_data_loader', module_data, infer_dataset)
+    infer_dataset = config.init_obj('val_dataset', module_data, sample_rate=sample_rate, T=config['num_samples'] )
+    infer_data_loader = config.init_obj('data_loader', module_data, infer_dataset)
 
     logger.info('Finish initializing datasets')
 
     # build model architecture
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    diffusion = config.init_obj('diffusion', module_diffusion, device=device)
-    network = config.init_obj('network', module_network, num_samples=config['num_samples'])
-    model = config.init_obj('arch', module_arch, diffusion, network)
+    model = config.init_obj('arch', module_arch, num_samples=config['num_samples'])
     # prepare model for testing
     model = model.to(device)
     model.eval()
@@ -59,43 +57,34 @@ def main(config):
 
     target_path = sample_path/'target'
     output_path = sample_path/'output'
-    condition_path = sample_path/'condition'
+    input_path = sample_path/'input'
     target_path.mkdir(parents=True, exist_ok=True)
     output_path.mkdir(parents=True, exist_ok=True)
-    condition_path.mkdir(parents=True, exist_ok=True)
+    input_path.mkdir(parents=True, exist_ok=True)
 
     n_samples = len(infer_data_loader)
     with torch.no_grad():
-        for i, (target, condition, index) in tqdm(enumerate(infer_data_loader), desc='infer process', total=n_samples):
-            target, condition = target.to(device), condition.to(device)
+        for i, (target, input, index) in tqdm(enumerate(infer_data_loader), desc='infer process', total=n_samples):
+            target, input = target.to(device), input.to(device)
 
-            # infer from conditional input only
+            # infer from inputal input only
 
-            output = model.infer(condition)
+            output = model(input)
 
             # save samples, or do something with output here
 
-            real_batch_size = target.shape[0]
-            batch_index_temp = []
-            previous_index = -1
-            for b in range(real_batch_size):
+            batch_size = target.shape[0]
+            for b in range(batch_size):
                 ind = index[b]
-                if ind == previous_index:
-                    batch_index_temp.append(b)
-                    continue
-                else:
-                    if previous_index > -1:
-                        name = infer_dataset.getName(previous_index)
-                        # stack back to full audio
-                        torchaudio.save(output_path/f'{name}.wav',
-                                        output[batch_index_temp, :, :].view(1, -1).cpu(), sample_rate)
-                        torchaudio.save(target_path/f'{name}.wav',
-                                        target[batch_index_temp, :, :].view(1, -1).cpu(), sample_rate)
-                        torchaudio.save(condition_path/f'{name}.wav',
-                                        condition[batch_index_temp, :, :].view(1, -1).cpu(), sample_rate)
+                name = infer_dataset.getName(ind)
+                # stack back to full audio
+                torchaudio.save(output_path/f'{name}.wav',
+                                output[b, :, :].cpu(), sample_rate)
+                torchaudio.save(target_path/f'{name}.wav',
+                                target[b, :, :].cpu(), sample_rate)
+                torchaudio.save(input_path/f'{name}.wav',
+                                input[b, :, :].cpu(), sample_rate)
 
-                    batch_index_temp = [b]
-                    previous_index = ind
 
 
             # computing loss, metrics on test set
