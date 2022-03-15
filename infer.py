@@ -93,7 +93,7 @@ def main(config):
 
     # evaluate results
     metrics = {'pesq_wb', 'sisnr', 'stoi'}
-    datatype = config['infer_dataset']['args']['datatype']
+    datatype = config['val_dataset']['args']['datatype']
     evaluate(sample_path, datatype, sample_rate, metrics, logger)
 
 
