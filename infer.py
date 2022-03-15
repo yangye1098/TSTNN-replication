@@ -5,11 +5,7 @@ from tqdm import tqdm
 import data_loader.data_loaders as module_data
 # import data_loader.numpy_dataset as module_data
 import model.loss as module_loss
-import model.metric as module_metric
-import model.model as module_arch
-
-import model.diffusion as module_diffusion
-import model.network as module_network
+import model.network as module_arch
 from evaluate_results import evaluate
 
 from parse_config import ConfigParser
