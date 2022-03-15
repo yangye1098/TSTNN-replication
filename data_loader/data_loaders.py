@@ -142,7 +142,7 @@ class OutputDataset(AudioDataset):
         self.T = T
 
         self.clean_path = Path('{}/target'.format(data_root))
-        self.noisy_path = Path('{}/condition'.format(data_root))
+        self.noise_path = Path('{}/input'.format(data_root))
         self.output_path = Path('{}/output'.format(data_root))
 
         self.inventory = generate_inventory(self.output_path, datatype)
