@@ -44,7 +44,7 @@ def main(config):
 
 
     # get function handles of loss and metrics
-    loss_fn = getattr(module_loss, config['loss'])
+    loss_fn = config.init_obj('loss', module_loss)
 
     total_loss = 0.0
 
